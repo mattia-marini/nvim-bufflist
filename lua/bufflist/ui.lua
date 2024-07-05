@@ -1,19 +1,20 @@
-local api = vim.api
 local buffers = require("bufflist.buffers")
+local maps = require("bufflist.mappings")
+local api = vim.api
 
 local m = {
-  buf = -1,
-  win = -1,
+  ui_buf = -1,
+  ui_win = -1,
   buffers = {},
   entries = {}
 }
 
 function m.open_window()
-  m.buf = api.nvim_create_buf(false, true)
+  m.ui_buf = api.nvim_create_buf(false, true)
   local border_buf = api.nvim_create_buf(false, true)
 
-  api.nvim_buf_set_option(m.buf, 'bufhidden', 'wipe')      --api.nvim_set_option_value( 'bufhidden', 'value', {buf = buf})
-  api.nvim_buf_set_option(m.buf, 'filetype', 'bufferlist') --api.nvim_set_option_value( 'filetype', 'bufferlist', {buf = buf})
+  api.nvim_buf_set_option(m.ui_buf, 'bufhidden', 'wipe')      --api.nvim_set_option_value( 'bufhidden', 'value', {buf = buf})
+  api.nvim_buf_set_option(m.ui_buf, 'filetype', 'bufferlist') --api.nvim_set_option_value( 'filetype', 'bufferlist', {buf = buf})
 
   local width = api.nvim_get_option("columns")             --api.nvim_get_option_value("column")
   local height = api.nvim_get_option("lines")              --api.nvim_get_option_value("column")
@@ -52,28 +53,28 @@ function m.open_window()
   api.nvim_buf_set_lines(border_buf, 0, -1, false, border_lines)
 
   api.nvim_open_win(border_buf, true, border_opts)
-  m.win = api.nvim_open_win(m.buf, true, opts)
+  m.ui_win = api.nvim_open_win(m.ui_buf, true, opts)
   api.nvim_command('au BufWipeout <buffer> exe "silent bwipeout! "' .. border_buf)
 
-  api.nvim_win_set_option(m.win, 'cursorline', true)
+  api.nvim_win_set_option(m.ui_win, 'cursorline', true)
 end
 
 function m.update_view()
   m.buffers, m.entries = buffers.parse_buffs()
   local result = {}
 
-  api.nvim_buf_set_option(m.buf, 'modifiable', true)
+  api.nvim_buf_set_option(m.ui_buf, 'modifiable', true)
 
   for _, entry in ipairs(m.entries) do
     table.insert(result, entry.bufnr .. ':' .. entry.winid .. entry.hidden .. entry.name)
   end
 
-  api.nvim_buf_set_lines(m.buf, 0, -1, false, result)
-  api.nvim_buf_set_option(m.buf, 'modifiable', false)
+  api.nvim_buf_set_lines(m.ui_buf, 0, -1, false, result)
+  api.nvim_buf_set_option(m.ui_buf, 'modifiable', false)
 end
 
 function m.close_window()
-  api.nvim_win_close(m.win, true)
+  api.nvim_win_close(m.ui_win, true)
 end
 
 function m.close_buffer()
@@ -95,8 +96,8 @@ end
 function m.show_window()
   m.open_window()
   m.update_view()
-  m.set_mappings()
-  vim.api.nvim_win_set_cursor(m.win, { 1, 0 })
+  maps.set(m.ui_buf)
+  vim.api.nvim_win_set_cursor(m.ui_win, { 1, 0 })
 end
 
 return m
